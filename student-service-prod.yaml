@@ -1,0 +1,95 @@
+---
+server:
+  config:
+    activate:
+      on-profile: prod
+spring:
+  datasource:
+    url: jdbc:h2:mem:studentdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://integrator-8424058.okta.com/oauth2/default
+  application:
+    name: student-service
+
+api:
+  domain: https://api.git.prod.student-service
+students:
+  list:
+    - id: 1
+      name: Sachin T
+      course: ENTC
+      email: sachin.T@abc.com
+    - id: 2
+      name: Rahul D
+      course: IT
+      email: rahul.D@abc.com
+    - id: 3
+      name: Saurav G
+      course: Computers
+      email: saurav.G@abc.com
+external:
+  student-api:
+    base-url: 'http://localhost:8080'
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        registerHealthIndicator: true
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 6
+        minimumNumberOfCalls: 6
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 2
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        eventConsumerBufferSize: 20
+    instances:
+      studentApi:
+        baseConfig: default
+  retry:
+    instances:
+      studentApi:
+        maxAttempts: 3
+        waitDuration: 200ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+        retryExceptions:
+          - org.springframework.web.client.HttpServerErrorException
+          - org.springframework.web.client.ResourceAccessException
+        ignoreExceptions:
+          - org.springframework.web.client.HttpClientErrorException$NotFound
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,circuitbreakers,circuitbreakerevents,beans,env,loggers,threaddump,mappings
+  endpoint:
+    health:
+      show-details: always
+logging:
+  level:
+    '[io.github.resilience4j]': INFO
+    org:
+      hibernate:
+        SQL: DEBUG
+        type:
+          descriptor:
+            sql: DEBUG
+          
